@@ -80,12 +80,12 @@ async function runAstGrep(
   options: { cwd: string; signal: AbortSignal },
 ) {
   try {
-    return await run("sg", args, options);
+    return await run("ast-grep", args, options);
   } catch (error) {
     if (hasCode(error) && error.code === "ENOENT") {
       return {
         stdout: "",
-        stderr: "ast-grep binary `sg` not found in PATH",
+        stderr: "ast-grep binary `ast-grep` not found in PATH",
         exitCode: 127,
       };
     }
