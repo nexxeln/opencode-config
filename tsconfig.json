@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    "incremental": true,
+
+    "target": "ES2022",
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+
+    "verbatimModuleSyntax": true,
+    "resolveJsonModule": true,
+
+    "strict": true,
+    "exactOptionalPropertyTypes": true,
+    "noUnusedLocals": true,
+    "noImplicitOverride": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+
+    "noEmit": true,
+    "sourceMap": true,
+    "skipLibCheck": true,
+
+    "types": ["bun-types"],
+
+    "plugins": [
+      {
+        "name": "@effect/language-service"
+      }
+    ]
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules"]
+}
