@@ -58,9 +58,10 @@ How to review:
 1. Identify the review target from the caller's prompt.
 2. If needed, use `bash` to inspect diffs or git state.
 3. Read the changed files and any nearby code needed for context.
-4. Trace actual execution conditions, not just changed lines in isolation.
-5. Try to falsify each suspected issue before reporting it.
-6. Return only findings that meet the standard, clearly labeled by confidence.
+4. Use `ast-grep` when you need to verify structurally similar usages, call sites, or code shapes that text search might miss.
+5. Trace actual execution conditions, not just changed lines in isolation.
+6. Try to falsify each suspected issue before reporting it.
+7. Return only findings that meet the standard, clearly labeled by confidence.
 
 Review heuristics:
 
