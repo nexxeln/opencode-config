@@ -1,22 +1,23 @@
-# git-hunk reference
+---
+name: git-hunk
+description: Non-interactive hunk and line-range staging with the `git-hunk` CLI. Use when a user wants atomic commits, selective staging, partial hunk staging, or an agent-safe replacement for `git add -p` or `git commit -p`, especially when `git-hunk` is available in the current repo or on PATH.
+---
 
-adapted from `nexxeln/git-hunk` `SKILL.md` so this skill can use the same agent-safe workflow without depending on an external checkout.
+# Git Hunk
 
-## purpose
+Use `git-hunk` to inspect, stage, unstage, and commit precise text changes without interactive prompts.
 
-use `git-hunk` to inspect, stage, unstage, and commit precise text changes without interactive prompts.
+Prefer `change_key` over raw line ranges when you need selectors that survive unrelated rescans. Keep `snapshot_id` for safety, treat `change_id` as snapshot-local, and treat raw line ranges as a last resort.
 
-prefer `change_key` over raw line ranges when you need selectors that survive unrelated rescans. keep `snapshot_id` for safety and treat `change_id` as snapshot-local.
+## Quick Start
 
-## quick start
-
-1. scan the repo and capture a snapshot:
+1. Scan the repo and capture a snapshot:
 
 ```bash
 git-hunk scan --mode stage --json
 ```
 
-2. inspect a selectable unit:
+2. Inspect a selectable unit:
 
 ```bash
 git-hunk show --mode stage <hunk-id>
@@ -24,16 +25,17 @@ git-hunk show --mode stage <change-id> --json
 git-hunk show --mode stage <change-key> --json
 ```
 
-3. apply a selection:
+3. Apply a selection:
 
 ```bash
 git-hunk stage --snapshot <snapshot-id> --hunk <hunk-id>
 git-hunk stage --snapshot <snapshot-id> --change <change-id>
 git-hunk stage --snapshot <snapshot-id> --change-key <change-key>
 git-hunk stage --snapshot <snapshot-id> --hunk <hunk-id>:new:41-44
+git-hunk stage --snapshot <snapshot-id> --change-key <change-key> --dry-run --json
 ```
 
-4. commit the exact selection directly:
+4. Commit the exact selection directly:
 
 ```bash
 git-hunk commit -m "feat: message" --snapshot <snapshot-id> --change <change-id>
@@ -42,25 +44,32 @@ git-hunk commit -m "fix: message" --snapshot <snapshot-id> --hunk <hunk-id>:old:
 git-hunk commit -m "feat: message" --snapshot <snapshot-id> --change-key <change-key> --dry-run --json
 ```
 
-5. resolve a file+line hint into durable selectors:
+5. Resolve a file+line hint into durable selectors:
 
 ```bash
 git-hunk resolve --mode stage --snapshot <snapshot-id> --path src/lib.rs --start 42 --json
 ```
 
-## workflow
+6. Recover stale selections without mutating anything:
 
-### stage mode
+```bash
+git-hunk validate --mode stage --snapshot <snapshot-id> --change-key <change-key> --compact --json
+```
 
-- use `scan --mode stage` for worktree changes relative to the index
-- select by whole hunk, `change_id`, `change_key`, or line range
-- prefer `--json` for agents; ids and `snapshot_id` come from scan output
-- use `scan --compact --json` when you want short previews and metadata without the full line arrays
+## Workflow
 
-### unstage mode
+### Stage mode
 
-- use `scan --mode unstage` for staged changes relative to `HEAD`
-- use the same selectors with `unstage` to remove only part of the index
+- Use `scan --mode stage` for worktree changes relative to the index.
+- Select by whole hunk, `change_id`, `change_key`, or line range.
+- Prefer `--json` for agents; ids and `snapshot_id` come from scan output.
+- Use `scan --compact --json` when you want short previews and metadata without the full line arrays.
+- Use selector bundles from JSON output instead of reconstructing selectors by hand.
+
+### Unstage mode
+
+- Use `scan --mode unstage` for staged changes relative to `HEAD`.
+- Use the same selectors with `unstage` to remove only part of the index.
 
 ```bash
 git-hunk unstage --snapshot <snapshot-id> --change <change-id>
@@ -68,46 +77,52 @@ git-hunk unstage --snapshot <snapshot-id> --change-key <change-key>
 git-hunk unstage --snapshot <snapshot-id> --hunk <hunk-id>:old:10-12
 ```
 
-### change keys
+### Change keys
 
-- `change_id` is snapshot-bound and should be treated as ephemeral
-- `change_key` is derived from the change content plus nearby context so it survives unrelated rescans
-- prefer `--change-key` for multi-step agent workflows where a fresh `scan` may happen before mutation
-- use `show`, `stage`, `unstage`, and `commit` with a `change_key` exactly like a `change_id`
+- `change_id` is snapshot-bound and should be treated as ephemeral.
+- `change_key_scheme` is currently `v1`.
+- `change_key` is derived from the change content plus nearby context so it survives unrelated rescans, duplicate disambiguation, and hunk splitting caused by unrelated edits.
+- `change_key` is not guaranteed to survive nearby context edits, renames, or future scheme changes.
+- Prefer `--change-key` for multi-step agent workflows where a fresh `scan` may happen before mutation.
+- Use `show`, `stage`, `unstage`, and `commit` with a `change_key` exactly like a `change_id`.
 
-### resolve helper
+### Resolve helper
 
-- use `resolve` when you know a file and approximate line range but do not want to reason about diff internals
-- `resolve` returns recommended `change_id`s, `change_key`s, hunk selectors, and candidate metadata
-- `--side auto` is the default; it prefers `new` lines in `stage` mode and `old` lines in `unstage` mode
+- Use `resolve` when you know a file and approximate line range but do not want to reason about diff internals.
+- `resolve` returns recommended `change_id`s, `change_key`s, hunk selectors, selector bundles, and candidate metadata.
+- `--side auto` is the default; it prefers `new` lines in `stage` mode and `old` lines in `unstage` mode.
 
 ```bash
 git-hunk resolve --mode stage --snapshot <snapshot-id> --path src/lib.rs --start 42 --end 47 --json
 git-hunk resolve --mode unstage --snapshot <snapshot-id> --path src/lib.rs --start 42 --side old --json
 ```
 
-### dry-run commits
+### Validation and dry-run previews
 
-- use `commit --dry-run` to preview the exact files, diffstat, and patch that would be committed
-- dry-run uses the real selection path against a temporary index, so it reflects actual commit behavior without mutating the repo
+- Use `validate` to compare an old `snapshot_id` against the current repo state and recover `change_key` selections before retrying a mutation.
+- Use `stage --dry-run` to preview what the index would look like after staging a selection.
+- Use `unstage --dry-run` to preview what would remain staged after removing a selection.
+- Use `commit --dry-run` to preview the exact files, diffstat, and patch that would be committed.
+- All dry-run commands use the real selection path against a temporary index, so they reflect actual behavior without mutating the repo.
 
-### line-range selectors
+### Line-range selectors
 
-- syntax: `<hunk-id>:<old|new>:<start-end>`
-- use `new` when selecting added or replacement lines from stage mode
-- use `old` when selecting the preimage side, especially in unstage mode
-- use `show` without `--json` when you want numbered lines in terminal output
+- Syntax: `<hunk-id>:<old|new>:<start-end>`.
+- Use `new` when selecting added/replacement lines from stage mode.
+- Use `old` when selecting the preimage side, especially in unstage mode.
+- Use `show` without `--json` when you want numbered lines in terminal output.
+- Agents should almost always prefer `change_key`, then `change_id`, then `resolve`, and only use raw line ranges when reproducing a user-specified range exactly.
 
-## snapshot discipline
+## Snapshot Discipline
 
-- treat `snapshot_id` as mandatory for any mutating command
-- rescan after every successful `stage`, `unstage`, or `commit`
-- if the command returns `stale_snapshot`, do not retry blindly; run `scan` again and use the fresh ids
-- `change_key` can survive rescans, but the mutation still needs a fresh `snapshot_id` before it applies
+- Treat `snapshot_id` as mandatory for any mutating command.
+- Rescan after every successful `stage`, `unstage`, or `commit`.
+- If the command returns `stale_snapshot`, do not retry blindly; inspect `error.details` or run `validate` to recover with the fresh snapshot.
+- `change_key` can survive rescans, but the mutation still needs a fresh `snapshot_id` before it applies.
 
-## plan files
+## Plan Files
 
-use a plan file when passing many selectors or when another tool is driving the workflow.
+Use a plan file when passing many selectors or when another tool is driving the workflow.
 
 ```json
 {
@@ -127,25 +142,27 @@ use a plan file when passing many selectors or when another tool is driving the 
 }
 ```
 
-run it with:
+Run it with:
 
 ```bash
 git-hunk stage --plan plan.json --json
+git-hunk stage --plan - --json < plan.json
 git-hunk commit -m "refactor: split change" --plan plan.json --json
 ```
 
-## failure handling
+## Failure Handling
 
-- if you get `ambiguous_line_range`, widen the range to cover the full atomic change or fall back to the `change_id` shown by `scan`
-- use `error.category`, `error.retryable`, and `error.details` from JSON errors to decide whether to rescan, retry, or fall back
-- if a path appears under `unsupported`, do not try to force it through `git-hunk`; use normal git commands or a different workflow for conflicts, renames, copies, binary files, or non-utf8 diffs
-- if there is nothing staged, `commit` fails unless `--allow-empty` is set
+- If you get `ambiguous_line_range`, widen the range to cover the full atomic change or fall back to the `change_id` shown by `scan`.
+- Use `error.category`, `error.retryable`, and `error.details` from JSON errors to decide whether to rescan, retry, or fall back.
+- If a path appears under `unsupported`, do not try to force it through `git-hunk`; use normal git commands or a different workflow for conflicts, renames, copies, binary files, or non-UTF8 diffs.
+- If there is nothing staged, `commit` fails unless `--allow-empty` is set.
 
-## practical defaults
+## Practical Defaults
 
-- prefer `change_key` over line ranges whenever both are available
-- prefer `resolve` when you only have a file and line hint
-- prefer `commit --dry-run` before a risky atomic commit from a dirty tree
-- prefer `commit` with selectors when the user asked for a commit and you already know the exact changes
-- prefer `stage` first when you need to inspect the staged result before committing
-- keep commits atomic by scanning, selecting a minimal set, committing, then rescanning for the next commit
+- Prefer `change_key` over line ranges whenever both are available.
+- Prefer `resolve` when you only have a file+line hint.
+- Prefer `validate` when an old snapshot goes stale but you still have `change_key`s.
+- Prefer `stage --dry-run`, `unstage --dry-run`, or `commit --dry-run` before a risky atomic mutation from a dirty tree.
+- Prefer `commit` with selectors when the user asked for a commit and you already know the exact changes.
+- Prefer `stage` first when you need to inspect the staged result before committing.
+- Keep commits atomic by scanning, selecting a minimal set, committing, then rescanning for the next commit.

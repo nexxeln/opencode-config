@@ -46,11 +46,15 @@ if the user provides extra instructions, treat them as constraints on scope, fil
    - before using `git-hunk`, read `references/git-hunk.md`
 
 4. use `git-hunk` safely when needed
-   - prefer `git-hunk scan --mode stage --compact --json`
-   - prefer `change_key` over `change_id`
-   - keep the returned `snapshot_id` and rescan after every successful `stage`, `unstage`, or `commit`
-   - use `git-hunk commit --dry-run ... --json` before a risky partial commit
-   - if a path is reported as unsupported, fall back to normal git for that path
+    - prefer `git-hunk scan --mode stage --compact --json`
+    - prefer `change_key` over `change_id`
+    - prefer selector bundles from `scan` or `resolve` json instead of rebuilding selectors by hand
+    - use `git-hunk resolve` when you only have a file and line hint
+    - keep the returned `snapshot_id` and rescan after every successful `stage`, `unstage`, or `commit`
+    - if a snapshot goes stale, use `git-hunk validate` to recover `change_key` selections before retrying
+    - use `git-hunk stage --dry-run ... --json`, `unstage --dry-run ... --json`, or `commit --dry-run ... --json` before a risky partial mutation
+    - treat raw line ranges as a last resort unless the user asked for an exact range
+    - if a path is reported as unsupported, fall back to normal git for that path
 
 5. commit and continue
    - write a short lowercase conventional message
