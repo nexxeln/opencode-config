@@ -4,7 +4,7 @@ description: split the current diff into atomic commits with git
 
 first load the `git` skill.
 
-you are running `/commit`.
+you are running `/cmt`.
 
 `$ARGUMENTS` are extra instructions from the user. treat them as constraints on scope, files, commit count, or message hints.
 
