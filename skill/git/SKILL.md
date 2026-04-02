@@ -73,11 +73,12 @@ if the user provides extra instructions, treat them as constraints on commit sco
 
 1. run the commit workflow first for all intended uncommitted changes
 2. inspect branch state with `git status`, `git branch --show-current`, tracking status, `git log`, and `git diff <base>...HEAD`
-3. choose the base branch from arguments when provided; otherwise prefer the repo default or current tracking setup
-4. push the branch with `git push -u origin <branch>` when needed; never force push
-5. create the pull request with `gh pr create`
-6. keep the PR title concise and aligned with the overall change set
-7. keep the PR body short and useful; default shape:
+3. if the current branch is the default branch (e.g. `main`), create a new branch named `nxl/<short-descriptive-name>` before pushing (e.g. `nxl/fix-auth-refresh`, `nxl/add-usage-metrics`)
+4. choose the base branch from arguments when provided; otherwise prefer the repo default or current tracking setup
+5. push the branch with `git push -u origin <branch>` when needed; never force push
+6. create the pull request with `gh pr create`
+7. keep the PR title concise and aligned with the overall change set
+8. keep the PR body short and useful; default shape:
 
 ```md
 ## summary
@@ -88,7 +89,7 @@ if the user provides extra instructions, treat them as constraints on commit sco
 - ...
 ```
 
-8. return the PR URL
+9. return the PR URL
 
 ## argument handling
 
