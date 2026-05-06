@@ -13,7 +13,14 @@
       "git push --force*": "deny",
       "git push -f*": "deny",
       "*--force-with-lease*": "deny",
-      "rm *": "deny"
+      "rm *": "ask"
     }
   },
+  "mcp": {
+    "figma": {
+      "type": "remote",
+      "url": "https://mcp.figma.com/mcp",
+      "enabled": true
+    }
+  }
 }
